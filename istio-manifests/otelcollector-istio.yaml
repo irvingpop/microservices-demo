@@ -95,7 +95,6 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 55678 # Default endpoint for Opencensus receiver.
-        - containerPort: 14267 # Default endpoint for Jaeger TChannel receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 9411 # Default endpoint for Zipkin receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
