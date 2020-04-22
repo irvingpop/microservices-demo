@@ -13,7 +13,6 @@ data:
         protocols:
           grpc:
           thrift_http:
-          thrift_tchannel:
           thrift_compact:
           thrift_binary:
       zipkin:
@@ -28,11 +27,11 @@ data:
     extensions:
       health_check: {}
     exporters:
-      jaeger_grpc:
+      jaeger:
         endpoint: "jaeger-collector:14250"
       honeycomb:
-        api_key: "MY_API_KEY"
-        dataset: "demo"
+        api_key: ${HONEYCOMB_WRITE_KEY}
+        dataset: ${HONEYCOMB_DATASET}
         api_url: "https://api.honeycomb.io"
     service:
       extensions: [health_check]
@@ -40,7 +39,7 @@ data:
         traces:
           receivers: [jaeger, zipkin]
           processors: [batch, queued_retry]
-          exporters: [jaeger_grpc, honeycomb]
+          exporters: [jaeger, honeycomb]
 
 ---
 apiVersion: apps/v1
@@ -76,6 +75,16 @@ spec:
         env:
         - name: GOGC
           value: "80"
+        - name: HONEYCOMB_WRITE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: otel-collector-secrets
+              key: honeycomb_write_key
+        - name: HONEYCOMB_DATASET
+          valueFrom:
+            secretKeyRef:
+              name: otel-collector-secrets
+              key: honeycomb_dataset
         image: otel/opentelemetry-collector-contrib-dev:latest
         name: server
         resources:
@@ -87,7 +96,6 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 55678 # Default endpoint for Opencensus receiver.
-        - containerPort: 14267 # Default endpoint for Jaeger TChannel receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 9411 # Default endpoint for Zipkin receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
@@ -100,8 +108,6 @@ spec:
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf
-#        - name: otel-collector-secrets
-#          mountPath: /secrets
         livenessProbe:
           httpGet:
             path: /
@@ -132,8 +138,6 @@ spec:
     port: 55678
     protocol: TCP
     targetPort: 55678
-  - name: jaeger-tchannel  # Default endpoint for Jaeger TChannel receiver.
-    port: 14267
   - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
     port: 14268
   - name: jaeger-thrift-udp
